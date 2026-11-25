@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مفاجأة البيبي! 👶</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      transition: background 1s ease;
+      padding: 20px;
+    }
+    body.revealed {
+      background: linear-gradient(135deg, #ad1457 0%, #ec407a 50%, #f48fb1 100%);
+      color: #fff;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      padding: 40px 28px;
+      border-radius: 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+      max-width: 420px;
+      width: 100%;
+      transition: all 0.6s ease;
+    }
+    body.revealed .card {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 25px 60px rgba(173, 20, 87, 0.4);
+    }
+    h1 { font-size: 1.8rem; margin-bottom: 12px; color: #2c3e50; }
+    p { font-size: 1.1rem; color: #555; margin-bottom: 28px; }
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border: none;
+      padding: 16px 36px;
+      font-size: 1.25rem;
+      font-family: 'Cairo', sans-serif;
+      font-weight: 800;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(118, 75, 162, 0.35);
+      transition: transform 0.2s;
+    }
+    .btn:active { transform: scale(0.95); }
+    .hidden { display: none !important; }
+    .countdown-num {
+      font-family: 'Poppins', sans-serif;
+      font-size: 6.5rem;
+      font-weight: 900;
+      color: #34495e;
+      animation: pulse 0.9s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.85); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+    .result-en {
+      font-family: 'Poppins', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin: 10px 0;
+      text-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .result-ar {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-top: 8px;
+      color: #fce4ec;
+    }
+    .emoji { font-size: 4.5rem; margin-bottom: 10px; display: block; animation: bounce 1.5s infinite; }
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <!-- الشاشة الأولى -->
+    <div id="start-screen">
+      <span class="emoji">🤍</span>
+      <h1>جاهزين للمفاجأة؟</h1>
+      <p>علّي الصوت واضغط لتعرف شو جاي عالطريق!</p>
+      <button class="btn" onclick="startReveal()">اكشف المفاجأة ✨</button>
+    </div>
+
+    <!-- شاشة العد التنازلي -->
+    <div id="countdown-screen" class="hidden">
+      <p style="margin-bottom: 10px; font-weight: 700;">دقات القلب عم تزيد...</p>
+      <div id="count-number" class="countdown-num">3</div>
+    </div>
+
+    <!-- شاشة النتيجة -->
+    <div id="result-screen" class="hidden">
+      <span class="emoji">👶🏻💗</span>
+      <div class="result-en">It's a Girl!</div>
+      <div class="result-ar">الحمدلله.. بنوتة! 🎉</div>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx;
+
+    function playBeep(freq, duration) {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function speakResult() {
+      // ملاحظة: إذا حبيت تستخدم ملف صوت MP3 خاص فيك، امسح كود speechSynthesis وحط:
+      // new Audio('girl.mp3').play();
+      if ('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance("It's a girl!");
+        msg.lang = 'en-US';
+        msg.rate = 0.95;
+        msg.pitch = 1.25;
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    function launchConfetti() {
+      const colors = ['#ec407a', '#f48fb1', '#ffffff', '#ffd54f'];
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors });
+      setTimeout(() => {
+        confetti({ particleCount: 80, angle: 60, spread: 60, origin: { x: 0 }, colors });
+        confetti({ particleCount: 80, angle: 120, spread: 60, origin: { x: 1 }, colors });
+      }, 400);
+    }
+
+    function startReveal() {
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('countdown-screen').classList.remove('hidden');
+
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      let count = 3;
+      const numEl = document.getElementById('count-number');
+      numEl.textContent = count;
+      playBeep(440, 0.25);
+
+      const timer = setInterval(() => {
+        count--;
+        if (count > 0) {
+          numEl.textContent = count;
+          playBeep(440 + (3 - count) * 110, 0.25);
+        } else {
+          clearInterval(timer);
+          playBeep(880, 0.6);
+          document.getElementById('countdown-screen').classList.add('hidden');
+          document.getElementById('result-screen').classList.remove('hidden');
+          document.body.classList.add('revealed');
+          speakResult();
+          launchConfetti();
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
